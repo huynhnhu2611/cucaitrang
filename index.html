@@ -3,76 +3,100 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI English Pronunciation Checker (Pro)</title>
+    <title>Doggy English - Pronunciation Coach</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
-        .correct { color: #10B981; font-weight: bold; }
-        .incorrect { color: #EF4444; font-weight: bold; text-decoration: line-through; }
+        /* Nền xanh lá với pattern chân chó */
+        body {
+            background-color: #ecfdf5;
+            background-image: url("https://www.transparenttextures.com/patterns/paws.png");
+        }
+        .correct { color: #059669; font-weight: bold; position: relative; }
+        .incorrect { color: #EF4444; font-weight: bold; text-decoration: line-through; opacity: 0.7; }
+        
+        /* Hiệu ứng rung nhẹ cho các con chó khi hover */
+        .dog-sticker:hover {
+            animation: wiggle 0.5s ease-in-out infinite;
+        }
+        @keyframes wiggle {
+            0%, 100% { transform: rotate(-5deg); }
+            50% { transform: rotate(5deg); }
+        }
     </style>
 </head>
-<body class="bg-gray-50 font-sans min-h-screen flex items-center justify-center p-4">
+<body class="font-sans min-h-screen flex items-center justify-center p-4">
 
-    <div class="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full border border-gray-100 relative z-10">
+    <div class="fixed top-10 left-10 text-6xl dog-sticker select-none opacity-20 md:opacity-100">🐶</div>
+    <div class="fixed bottom-10 right-10 text-6xl dog-sticker select-none opacity-20 md:opacity-100">🐕</div>
+    <div class="fixed top-20 right-20 text-5xl dog-sticker select-none opacity-20 md:opacity-100">🐩</div>
+    <div class="fixed bottom-20 left-20 text-5xl dog-sticker select-none opacity-20 md:opacity-100">🐾</div>
+
+    <div class="bg-white p-8 rounded-3xl shadow-2xl max-w-md w-full border-4 border-emerald-100 relative z-10">
         <div class="flex justify-between items-center mb-6">
-            <h1 class="text-xl font-bold text-indigo-600">🇺🇸 Pronunciation Coach</h1>
-            <span id="progress-text" class="text-xs bg-indigo-100 text-indigo-700 px-2.5 py-1 rounded-full font-semibold">Câu 1/7</span>
+            <h1 class="text-xl font-bold text-emerald-600 flex items-center gap-2">
+                <span>🐕</span> Doggy Coach
+            </h1>
+            <span id="progress-text" class="text-xs bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full font-bold">Câu 1/7</span>
         </div>
         
-        <div class="mb-6">
-            <p class="text-sm text-gray-500 font-medium mb-1">Câu mẫu (Chuẩn American English):</p>
-            <div id="target-text" class="text-lg font-semibold text-gray-800 bg-indigo-50 p-4 rounded-xl border border-indigo-100 min-h-[60px] flex items-center">
+        <div class="mb-6 relative">
+            <p class="text-sm text-emerald-500 font-bold mb-2 flex items-center gap-1">
+                Sủa... ý tôi là Đọc câu này:
+            </p>
+            <div id="target-text" class="text-lg font-semibold text-gray-800 bg-emerald-50 p-5 rounded-2xl border-2 border-emerald-100 min-h-[80px] flex items-center shadow-inner">
                 Loading...
             </div>
-            <div class="flex justify-between items-center mt-2">
-                <span id="auto-next-status" class="text-xs text-emerald-600 font-medium animate-pulse hidden">✨ Chuẩn xác >90%! Đang chuyển câu...</span>
-                <button onclick="changeSentence()" class="text-xs text-indigo-500 hover:text-indigo-700 font-medium ml-auto">
-                    🔄 Bỏ qua câu này
+            
+            <div class="flex justify-between items-center mt-3">
+                <span id="auto-next-status" class="text-xs text-orange-500 font-bold animate-bounce hidden">🦴 Giỏi lắm! Thưởng cho bạn 1 khúc xương...</span>
+                <button onclick="changeSentence()" class="text-xs text-emerald-500 hover:text-emerald-700 font-bold ml-auto flex items-center gap-1">
+                    🔄 Đổi câu khác
                 </button>
             </div>
         </div>
 
-        <div class="flex flex-col items-center justify-center gap-4 my-6">
-            <button id="btn-record" onclick="toggleListening()" class="w-20 h-20 bg-indigo-600 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-indigo-700 transition-all focus:outline-none ring-4 ring-indigo-100">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div class="flex flex-col items-center justify-center gap-4 my-8">
+            <button id="btn-record" onclick="toggleListening()" class="w-24 h-24 bg-emerald-500 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-emerald-600 transition-all focus:outline-none ring-8 ring-emerald-50 group">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
                 </svg>
             </button>
-            <p id="status" class="text-sm text-gray-500 italic text-center">Nhấn nút và bắt đầu nói...</p>
+            <p id="status" class="text-sm text-emerald-600 font-medium text-center bg-white px-4 py-1 rounded-full border border-emerald-100 shadow-sm">Bấm để sủa... à nhầm, để nói!</p>
         </div>
 
-        <div class="space-y-4 pt-4 border-t border-gray-100">
+        <div class="space-y-4 pt-6 border-t-2 border-dashed border-emerald-100">
             <div>
-                <p class="text-sm text-gray-500 font-medium">Bạn đã nói:</p>
-                <p id="result-text" class="text-gray-700 italic min-h-[24px]">—</p>
-            </div>
-            <div>
-                <p class="text-sm text-gray-500 font-medium">Phân tích chi tiết:</p>
-                <div id="analysis-text" class="text-gray-700 min-h-[24px]">—</div>
+                <p class="text-xs text-gray-400 uppercase tracking-widest font-bold">Kết quả:</p>
+                <p id="result-text" class="text-gray-700 italic text-lg mt-1">—</p>
             </div>
 
             <div>
-                <p class="text-sm text-gray-500 font-medium">Điểm số:</p>
-                <div class="flex items-center gap-2 mt-1">
-                    <div class="w-full bg-gray-200 h-3 rounded-full overflow-hidden">
-                        <div id="score-bar" class="bg-emerald-500 h-full w-0 transition-all duration-500"></div>
-                    </div>
-                    <span id="score-text" class="text-lg font-bold text-emerald-600">0%</span>
+                <p class="text-xs text-gray-400 uppercase tracking-widest font-bold">So sánh chi tiết:</p>
+                <div id="analysis-text" class="text-gray-800 text-lg mt-1 tracking-wide">—</div>
+            </div>
+
+            <div>
+                <div class="flex justify-between mb-1">
+                    <span class="text-xs font-bold text-emerald-600">Độ chuẩn xác</span>
+                    <span id="score-text" class="text-sm font-black text-emerald-600">0%</span>
+                </div>
+                <div class="w-full bg-emerald-50 h-4 rounded-full p-1 border border-emerald-100">
+                    <div id="score-bar" class="bg-emerald-500 h-full rounded-full w-0 transition-all duration-700"></div>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        // Bộ câu hỏi gồm 7 câu phát âm Mỹ phổ biến của bạn
         const sentences = [
             "How is the weather today?",
             "I would like to order a cup of coffee.",
             "Practice makes perfect.",
-            "Google Speech API is powerful.",
-            "Can you tell me how to get to the station?",
-            "A cat is very beautiful",
-            "The sky is blue"
+            "The golden retriever is very friendly.",
+            "I love playing with my dog in the park.",
+            "Dogs are a man's best friend.",
+            "The sky is blue and the grass is green."
         ];
 
         let currentSentenceIndex = 0;
@@ -88,7 +112,6 @@
         const scoreBar = document.getElementById('score-bar');
         const scoreText = document.getElementById('score-text');
 
-        // Khởi tạo câu đầu tiên và cập nhật số lượng câu dựa trên mảng thực tế
         targetTextElem.innerText = sentences[currentSentenceIndex];
         progressTextElem.innerText = `Câu 1/${sentences.length}`;
 
@@ -106,97 +129,60 @@
                 isListening = true;
                 if(autoNextTimeout) clearTimeout(autoNextTimeout);
                 autoNextStatusElem.classList.add('hidden');
-
-                statusElem.innerText = "Đang nghe... Hãy nói to, rõ ràng.";
-                btnRecord.classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
-                btnRecord.classList.add('bg-red-500', 'hover:bg-red-600', 'animate-pulse');
+                statusElem.innerText = "🦴 Tôi đang nghe đây...";
+                btnRecord.classList.replace('bg-emerald-500', 'bg-orange-500');
+                btnRecord.classList.add('animate-pulse');
             };
+
             recognition.onend = () => {
                 isListening = false;
-                statusElem.innerText = "Đang tính điểm...";
-                btnRecord.classList.remove('bg-red-500', 'hover:bg-red-600', 'animate-pulse');
-                btnRecord.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
+                statusElem.innerText = "Đang kiểm tra...";
+                btnRecord.classList.replace('bg-orange-500', 'bg-emerald-500');
+                btnRecord.classList.remove('animate-pulse');
             };
 
             recognition.onresult = (event) => {
                 const speechToText = event.results[0][0].transcript;
-                resultTextElem.innerText = speechToText;
+                resultTextElem.innerText = `"${speechToText}"`;
                 evaluatePronunciation(targetTextElem.innerText, speechToText);
             };
-
-            recognition.onerror = (event) => {
-                statusElem.innerText = "Không nghe rõ, vui lòng thử lại! (Lỗi: " + event.error + ")";
-            };
-        } else {
-            alert("Trình duyệt không hỗ trợ Web Speech API. Vui lòng mở bằng Google Chrome.");
         }
 
         function toggleListening() {
             if (!recognition) return;
-            if (isListening) {
-                recognition.stop();
-            } else {
-                recognition.start();
-            }
+            isListening ? recognition.stop() : recognition.start();
         }
 
         function changeSentence() {
             if(autoNextTimeout) clearTimeout(autoNextTimeout);
             autoNextStatusElem.classList.add('hidden');
-
             currentSentenceIndex = (currentSentenceIndex + 1) % sentences.length;
-            
-            targetTextElem.innerText = sentences[currentSentenceIndex].trim();
+            targetTextElem.innerText = sentences[currentSentenceIndex];
             progressTextElem.innerText = `Câu ${currentSentenceIndex + 1}/${sentences.length}`;
-            
+            resetUI();
+        }
+
+        function resetUI() {
             resultTextElem.innerText = "—";
             analysisElem.innerHTML = "—";
             scoreBar.style.width = "0%";
             scoreText.innerText = "0%";
-            statusElem.innerText = "Nhấn nút và bắt đầu nói...";
+            statusElem.innerText = "Bấm để sủa... à nhầm, để nói!";
         }
 
         function cleanWord(word) {
             return word.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?]/g, "");
         }
 
-        // Hàm kích hoạt hiệu ứng pháo hoa nhiều màu bung tỏa từ 2 góc màn hình
         function triggerFireworks() {
-            const duration = 1.5 * 1000; // Pháo hoa bắn trong 1.5 giây
-            const animationEnd = Date.now() + duration;
-            const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
-
-            function randomInRange(min, max) {
-                return Math.random() * (max - min) + min;
-            }
-
-            const interval = setInterval(function() {
-                const timeLeft = animationEnd - Date.now();
-
-                if (timeLeft <= 0) {
-                    return clearInterval(interval);
-                }
-
-                const particleCount = 50 * (timeLeft / duration);
-                
-                // Bắn từ bên trái màn hình sang phải
-                confetti(Object.assign({}, defaults, { 
-                    particleCount, 
-                    origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 }
-                    }));
-                // Bắn từ bên phải màn hình sang trái
-                confetti(Object.assign({}, defaults, { 
-                    particleCount, 
-                    origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } 
-                }));
-            }, 250);
+            const defaults = { spread: 360, ticks: 50, gravity: 0.5, decay: 0.94, startVelocity: 30, shapes: ['star'], colors: ['#10B981', '#F59E0B'] };
+            confetti({ ...defaults, particleCount: 40, origin: { y: 0.7 } });
+            confetti({ ...defaults, particleCount: 20, origin: { y: 0.7 }, scalar: 2 });
         }
 
         function evaluatePronunciation(target, spoken) {
-            // Loại bỏ khoảng trắng thừa ở đầu/cuối của câu mẫu trước khi chia từ
             const targetWords = target.trim().split(/\s+/);
             const spokenWords = spoken.trim().split(/\s+/);
-            
             let htmlAnalysis = [];
             let correctCount = 0;
 
@@ -214,24 +200,17 @@
             });
 
             const scorePercentage = Math.round((correctCount / targetWords.length) * 100);
-
             analysisElem.innerHTML = htmlAnalysis.join(" ");
             scoreBar.style.width = `${scorePercentage}%`;
             scoreText.innerText = `${scorePercentage}%`;
 
-            if (scorePercentage > 90) {
-                statusElem.innerText = "Tuyệt vời! Phát âm chuẩn xác.";
+            if (scorePercentage > 85) {
+                statusElem.innerText = "🐶 Gâu! Quá chuẩn!";
                 autoNextStatusElem.classList.remove('hidden');
-                
-                // KÍCH HOẠT HIỆU ỨNG PHÁO HOA
                 triggerFireworks();
-                
-                // Tăng thời gian chờ lên 2.5 giây (2500ms) giúp người dùng thưởng thức pháo hoa trước khi đổi câu
-                autoNextTimeout = setTimeout(() => {
-                    changeSentence();
-                }, 2500);
+                autoNextTimeout = setTimeout(changeSentence, 3000);
             } else {
-                statusElem.innerText = "Chưa đạt chuẩn (>90%). Hãy thử lại câu này nhé!";
+                statusElem.innerText = "🐶 Hừm... Thử lại câu này nhé!";
             }
         }
     </script>
