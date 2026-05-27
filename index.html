@@ -5,92 +5,114 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Pronunciation Checker</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; padding: 50px; background-color: #f4f7f6; }
-        .container { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); max-width: 500px; margin: auto; }
-        h2 { color: #2c3e50; }
-        #target-text { font-size: 24px; font-weight: bold; color: #3498db; margin: 20px 0; }
-        button { padding: 12px 25px; font-size: 16px; cursor: pointer; border: none; border-radius: 5px; background-color: #2ecc71; color: white; transition: 0.3s; }
-        button:hover { background-color: #27ae60; }
-        button:disabled { background-color: #95a5a6; }
-        #result { margin-top: 20px; font-size: 18px; }
-        .score { font-size: 40px; font-weight: bold; margin-top: 10px; }
-        .feedback { color: #7f8c8d; font-style: italic; }
+        body { font-family: 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #f0f2f5; }
+        .app-card { background: white; padding: 2rem; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; width: 90%; max-width: 450px; }
+        h1 { color: #1a73e8; font-size: 1.5rem; }
+        #target-word { font-size: 2rem; font-weight: bold; color: #202124; margin: 20px 0; display: block; }
+        button { background-color: #1a73e8; color: white; border: none; padding: 15px 30px; border-radius: 50px; font-size: 1rem; cursor: pointer; transition: 0.3s; }
+        button:hover { background-color: #1557b0; transform: scale(1.05); }
+        button:disabled { background-color: #ccc; }
+        .result-box { margin-top: 25px; padding: 15px; border-radius: 10px; display: none; }
+        .score { font-size: 3rem; font-weight: bold; margin: 10px 0; }
+        .feedback { font-style: italic; color: #5f6368; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h2>Luyện Phát Âm Mỹ</h2>
-    <p>Hãy đọc câu dưới đây:</p>
-    <div id="target-text">English is easy</div>
-    
-    <button id="start-btn">Bắt đầu nói</button>
-    
-    <div id="result">
-        <p class="feedback" id="status">Nhấn nút để bắt đầu...</p>
-        <div class="score" id="score-display">--%</div>
-        <p id="transcript"></p>
+<div class="app-card">
+    <h1>Luyện Phát Âm Mỹ</h1>
+    <p>Hãy đọc to từ/câu sau:</p>
+    <span id="target-word">Beautiful</span>
+
+    <br>
+    <button id="mic-btn">Bắt đầu nói</button>
+
+    <div id="result-area" class="result-box">
+        <div class="feedback" id="user-said"></div>
+        <div class="score" id="final-score">0%</div>
+        <div id="message"></div>
     </div>
 </div>
 
 <script>
-    const targetText = "English is easy".toLowerCase().replace(/[.,/#!$%^&*;:{}=\-_`~()]/g,"");
-    const startBtn = document.getElementById('start-btn');
-    const status = document.getElementById('status');
-    const scoreDisplay = document.getElementById('score-display');
-    const transcriptDisplay = document.getElementById('transcript');
+    const micBtn = document.getElementById('mic-btn');
+    const targetWord = document.getElementById('target-word').innerText.toLowerCase().trim();
+    const resultArea = document.getElementById('result-area');
+    const userSaid = document.getElementById('user-said');
+    const finalScore = document.getElementById('final-score');
+    const message = document.getElementById('message');
 
-    // Kiểm tra trình duyệt hỗ trợ
+    // Khởi tạo Speech Recognition (Google API qua trình duyệt)
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     
     if (!SpeechRecognition) {
-        alert("Trình duyệt của bạn không hỗ trợ nhận diện giọng nói. Hãy dùng Chrome.");
+        alert("Trình duyệt của bạn không hỗ trợ nhận diện giọng nói. Vui lòng dùng Chrome.");
     } else {
         const recognition = new SpeechRecognition();
         
-        // Cấu hình ngôn ngữ chuẩn Anh-Mỹ
+        // Thiết lập chuẩn Anh - Mỹ
         recognition.lang = 'en-US'; 
         recognition.interimResults = false;
         recognition.maxAlternatives = 1;
 
-        startBtn.onclick = () => {
+        micBtn.onclick = () => {
             recognition.start();
-            status.innerText = "Đang nghe... (Giọng Mỹ)";
-            startBtn.disabled = true;
+            micBtn.innerText = "Đang nghe...";
+            micBtn.disabled = true;
         };
 
         recognition.onresult = (event) => {
-            const userSpeech = event.results[0][0].transcript.toLowerCase().replace(/[.,/#!$%^&*;:{}=\-_`~()]/g,"");
-            const confidence = event.results[0][0].confidence;
-            
-            transcriptDisplay.innerHTML = `Bạn đã nói: <b>"${userSpeech}"</b>`;
-            
-            // Tính điểm dựa trên thuật toán Levenshtein (độ tương đồng) hoặc so sánh trực tiếp đơn giản
-            let score = 0;
-            if (userSpeech === targetText) {
-                score = Math.round(confidence * 100);
-            } else {
-                // Nếu không khớp hoàn toàn, tính toán độ lệch
-                score = calculateSimilarity(userSpeech, targetText) * 100;
-            }
+            const transcript = event.results[0][0].transcript.toLowerCase().trim();
+            const confidence = event.results[0][0].confidence; // Độ tự tin của Google (0-1)
 
-            scoreDisplay.innerText = Math.round(score) + "%";
-            scoreDisplay.style.color = score > 70 ? "#2ecc71" : "#e74c3c";
-            status.innerText = "Hoàn thành!";
-            startBtn.disabled = false;
+            processResult(transcript, confidence);
         };
 
         recognition.onspeechend = () => {
             recognition.stop();
+            micBtn.innerText = "Bắt đầu nói";
+            micBtn.disabled = false;
         };
 
-        recognition.onerror = (event) => {
-            status.innerText = "Lỗi: " + event.error;
-            startBtn.disabled = false;
+        recognition.onerror = () => {
+            alert("Đã xảy ra lỗi khi nhận diện. Hãy thử lại!");
+            micBtn.disabled = false;
+            micBtn.innerText = "Bắt đầu nói";
         };
     }
 
-    // Hàm tính độ tương đồng đơn giản giữa 2 chuỗi
+    function processResult(speech, confidence) {
+        resultArea.style.display = 'block';
+        userSaid.innerHTML = `Bạn đã nói: <b>"${speech}"</b>`;
+
+        // Thuật toán chấm điểm đơn giản:
+        // 1. Kiểm tra xem từ có khớp hoàn toàn không
+        // 2. Kết hợp với chỉ số 'confidence' (độ rõ ràng) của Google
+        let score = 0;
+
+        if (speech === targetWord) {
+            // Nếu khớp từ, điểm sẽ dựa trên độ rõ (confidence) của Google
+            score = Math.round(confidence * 100);
+        } else {
+            // Nếu không khớp, sử dụng độ tương đồng cơ bản
+            score = calculateSimilarity(speech, targetWord) * 60; 
+        }
+
+        finalScore.innerText = `${score}%`;
+        
+        if (score >= 80) {
+            finalScore.style.color = "#28a745";
+            message.innerText = "Tuyệt vời! Chuẩn giọng Mỹ.";
+        } else if (score >= 50) {
+            finalScore.style.color = "#ffc107";
+            message.innerText = "Khá tốt, nhưng cần rõ ràng hơn.";
+        } else {
+            finalScore.style.color = "#dc3545";
+            message.innerText = "Thử lại nhé, hãy chú ý âm cuối.";
+        }
+    }
+
+    // Hàm tính độ tương đồng chuỗi (Levenshtein distance đơn giản)
     function calculateSimilarity(s1, s2) {
         let longer = s1.length > s2.length ? s1 : s2;
         let shorter = s1.length > s2.length ? s2 : s1;
@@ -99,15 +121,15 @@
     }
 
     function editDistance(s1, s2) {
-        let costs = [];
+        let costs = new Array();
         for (let i = 0; i <= s1.length; i++) {
             let lastValue = i;
             for (let j = 0; j <= s2.length; j++) {
-                if (i === 0) costs[j] = j;
+                if (i == 0) costs[j] = j;
                 else {
                     if (j > 0) {
                         let newValue = costs[j - 1];
-                        if (s1.charAt(i - 1) !== s2.charAt(j - 1))
+                        if (s1.charAt(i - 1) != s2.charAt(j - 1))
                             newValue = Math.min(Math.min(newValue, lastValue), costs[j]) + 1;
                         costs[j - 1] = lastValue;
                         lastValue = newValue;
