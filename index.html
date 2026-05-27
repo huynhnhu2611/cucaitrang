@@ -3,18 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Pronunciation Checker</title>
+    <title>AI Pronunciation Checker with Confetti</title>
+    <!-- Chèn thư viện tạo hiệu ứng pháo hoa giấy -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
         body { font-family: 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #f0f2f5; }
-        .app-card { background: white; padding: 2rem; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; width: 90%; max-width: 450px; }
+        .app-card { background: white; padding: 2rem; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; width: 90%; max-width: 450px; position: relative; overflow: hidden; }
         h1 { color: #1a73e8; font-size: 1.5rem; }
         #target-word { font-size: 2rem; font-weight: bold; color: #202124; margin: 20px 0; display: block; }
-        button { background-color: #1a73e8; color: white; border: none; padding: 15px 30px; border-radius: 50px; font-size: 1rem; cursor: pointer; transition: 0.3s; }
-        button:hover { background-color: #1557b0; transform: scale(1.05); }
-        button:disabled { background-color: #ccc; }
-        .result-box { margin-top: 25px; padding: 15px; border-radius: 10px; display: none; }
-        .score { font-size: 3rem; font-weight: bold; margin: 10px 0; }
-        .feedback { font-style: italic; color: #5f6368; }
+        
+        /* Hiệu ứng nút bấm */
+        button { background-color: #1a73e8; color: white; border: none; padding: 15px 30px; border-radius: 50px; font-size: 1rem; cursor: pointer; transition: all 0.3s ease; outline: none; }
+        button:hover { background-color: #1557b0; transform: scale(1.05); box-shadow: 0 5px 15px rgba(26, 115, 232, 0.4); }
+        button:disabled { background-color: #ccc; transform: none; box-shadow: none; }
+        
+        /* Trạng thái đang ghi âm */
+        .recording { background-color: #ea4335 !important; animation: pulse 1.5s infinite; }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(234, 67, 53, 0.2); }
+            100% { transform: scale(1); }
+        }
+
+        .result-box { margin-top: 25px; padding: 15px; border-radius: 10px; display: none; animation: fadeIn 0.5s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .score { font-size: 3.5rem; font-weight: bold; margin: 10px 0; transition: color 0.5s; }
+        .feedback { font-style: italic; color: #5f6368; margin-bottom: 5px; }
+        #message { font-weight: bold; font-size: 1.1rem; }
     </style>
 </head>
 <body>
@@ -42,15 +58,12 @@
     const finalScore = document.getElementById('final-score');
     const message = document.getElementById('message');
 
-    // Khởi tạo Speech Recognition (Google API qua trình duyệt)
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     
     if (!SpeechRecognition) {
         alert("Trình duyệt của bạn không hỗ trợ nhận diện giọng nói. Vui lòng dùng Chrome.");
     } else {
         const recognition = new SpeechRecognition();
-        
-        // Thiết lập chuẩn Anh - Mỹ
         recognition.lang = 'en-US'; 
         recognition.interimResults = false;
         recognition.maxAlternatives = 1;
@@ -58,61 +71,81 @@
         micBtn.onclick = () => {
             recognition.start();
             micBtn.innerText = "Đang nghe...";
-            micBtn.disabled = true;
+            micBtn.classList.add('recording');
         };
 
         recognition.onresult = (event) => {
             const transcript = event.results[0][0].transcript.toLowerCase().trim();
-            const confidence = event.results[0][0].confidence; // Độ tự tin của Google (0-1)
-
+            const confidence = event.results[0][0].confidence;
             processResult(transcript, confidence);
         };
 
         recognition.onspeechend = () => {
             recognition.stop();
-            micBtn.innerText = "Bắt đầu nói";
-            micBtn.disabled = false;
+            resetButton();
         };
 
         recognition.onerror = () => {
-            alert("Đã xảy ra lỗi khi nhận diện. Hãy thử lại!");
-            micBtn.disabled = false;
-            micBtn.innerText = "Bắt đầu nói";
+            alert("Không nghe rõ, vui lòng thử lại!");
+            resetButton();
         };
+    }
+
+    function resetButton() {
+        micBtn.innerText = "Bắt đầu nói";
+        micBtn.classList.remove('recording');
+    }
+
+    // Hàm bắn pháo hoa chúc mừng
+    function GiaoDienChucMung() {
+        // Bắn từ bên trái
+        confetti({
+            particleCount: 100,
+            spread: 70,
+            origin: { x: 0, y: 0.6 }
+        });
+        // Bắn từ bên phải
+        confetti({
+            particleCount: 100,
+            spread: 70,
+            origin: { x: 1, y: 0.6 }
+        });
     }
 
     function processResult(speech, confidence) {
         resultArea.style.display = 'block';
         userSaid.innerHTML = `Bạn đã nói: <b>"${speech}"</b>`;
 
-        // Thuật toán chấm điểm đơn giản:
-        // 1. Kiểm tra xem từ có khớp hoàn toàn không
-        // 2. Kết hợp với chỉ số 'confidence' (độ rõ ràng) của Google
         let score = 0;
-
         if (speech === targetWord) {
-            // Nếu khớp từ, điểm sẽ dựa trên độ rõ (confidence) của Google
             score = Math.round(confidence * 100);
         } else {
-            // Nếu không khớp, sử dụng độ tương đồng cơ bản
-            score = calculateSimilarity(speech, targetWord) * 60; 
+            score = Math.round(calculateSimilarity(speech, targetWord) * 60); 
         }
 
         finalScore.innerText = `${score}%`;
         
+        // Phân loại kết quả và kích hoạt hiệu ứng
         if (score >= 80) {
             finalScore.style.color = "#28a745";
-            message.innerText = "Tuyệt vời! Chuẩn giọng Mỹ.";
+            message.innerText = "🎉 Tuyệt vời! Chuẩn giọng Mỹ rồi! 🎉";
+            message.style.color = "#28a745";
+            
+            // Kích hoạt hiệu ứng pháo hoa giấy chúc mừng
+            GiaoDienChucMung();
+
         } else if (score >= 50) {
             finalScore.style.color = "#ffc107";
-            message.innerText = "Khá tốt, nhưng cần rõ ràng hơn.";
+            message.innerText = "👍 Khá tốt, cố gắng rõ âm hơn chút nữa!";
+            message.style.color = "#b58100";
         } else {
             finalScore.style.color = "#dc3545";
-            message.innerText = "Thử lại nhé, hãy chú ý âm cuối.";
+            message.innerText = "❌ Chưa chính xác, hãy thử lại nhé!";
+            message.style.color = "#dc3545";
         }
     }
 
-    // Hàm tính độ tương đồng chuỗi (Levenshtein distance đơn giản)
+    // Thuật toán so sánh chuỗi Levenshtein
     function calculateSimilarity(s1, s2) {
         let longer = s1.length > s2.length ? s1 : s2;
         let shorter = s1.length > s2.length ? s2 : s1;
